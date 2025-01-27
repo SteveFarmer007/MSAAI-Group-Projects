@@ -4,4 +4,4 @@ To run the notebook locally
 2. run python3 install_packages to install all necessary packages.
 
 # Data Processing
-Run python3 utils/__init__.py
+Run python3 utils/init.py
