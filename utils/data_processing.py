@@ -117,6 +117,21 @@ def process_median_income():
 
     print(f"Processed data saved to {df_long.head()}")
 
-# Call the function if the script is run directly
-# if __name__ == "__main__":
-    # process_median_income()
+def process_health_care_spending():
+    # Read the Excel file into a DataFrame
+    df = pd.read_excel("data/raw/Health_Care.xlsx", header=1) # header starts at row 2
+
+    # Reshape DataFrame: Convert from wide to long format
+    df_long = df.melt(id_vars=["Region/state of residence"], var_name="Year", value_name="Spending")
+    df_long = df_long.rename(columns={"Region/state of residence": "State"})
+    
+    # Convert Year to string to match filtering range
+    df_long["Year"] = df_long["Year"].astype(str)
+
+    # Filter only for years 1999-2017
+    df_filtered = df_long[df_long["Year"].isin([str(year) for year in range(1999, 2018)])]
+
+    # Save the cleaned data to CSV
+    df_filtered.to_csv("data/processed/Health_Care_Spending.csv", index=False)
+
+    print(f"Processed data saved to {df_filtered.head()}")
