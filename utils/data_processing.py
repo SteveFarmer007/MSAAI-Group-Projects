@@ -76,7 +76,47 @@ def extract_poverty_rate():
     # Preview the cleaned data
     print(cleaned_df.head())
 
+def process_personal_income_per_capital():
+    # Load the CSV file
+    file_path = "data/raw/Personal_Income_Per_Capital.csv"  # Replace with the path to your CSV file
+    df = pd.read_csv(file_path)
+    
+    print(df.columns.tolist())
+
+    # Filter columns for years 1999 to 2017, and include the 'State' column
+    columns_to_keep = ['State'] + [str(year) for year in range(1999, 2018)]
+    filtered_df = df[columns_to_keep]
+
+    # Save the filtered data to a new CSV file
+    filtered_df.to_csv("data/processed/Personal_Income_Per_Capital.csv", index=False)
+
+    print(f"Filtered data saved to {filtered_df.head()}")
+
+def process_median_income():
+    # Read the Excel file into a DataFrame
+    df = pd.read_excel("data/raw/Median_Household_Income.xls", header=[0, 1]) # read headers in row 1 and 2
+
+    # Merge the two header levels: Keep only "Median income"
+    df = df.loc[:, (df.columns.get_level_values(1) == "Median income") | (df.columns.get_level_values(0) == "State")]
+
+    # Flatten and rename columns: Keep 'State' + years
+    df.columns = ["State"] + [str(col[0]) for col in df.columns[1:]]  # Extract years from first header row
+
+    # Filter only relevant years (1999–2017)
+    columns_to_keep = ["State"] + [str(year) for year in range(1999, 2018)]
+    df_filtered = df[columns_to_keep]
+
+    # Reshape from wide to long format
+    df_long = df_filtered.melt(id_vars=["State"], var_name="Year", value_name="Median Income")
+
+    # Remove rows where "State" is NaN (if extra sheet duplicates exist)
+    df_long = df_long.dropna(subset=["State"])
+
+    # Save the processed data to a CSV file
+    df_long.to_csv("data/processed/Median_Household_Income.csv", index=False)
+
+    print(f"Processed data saved to {df_long.head()}")
 
 # Call the function if the script is run directly
-if __name__ == "__main__":
-    extract_poverty_rate()  
+# if __name__ == "__main__":
+    # process_median_income()
