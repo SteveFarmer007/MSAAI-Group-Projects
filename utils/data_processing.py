@@ -37,11 +37,8 @@ def merge_death_count_population():
         print(f"An error occurred: {e}")
         
 def extract_poverty_rate():
-    # Path to your Excel file
-    excel_file = "data/raw/Poverty_Rate.xlsx"  # Replace with your file path
-
     # Read the Excel file into a DataFrame
-    df = pd.read_excel(excel_file, engine="openpyxl")  # Read without a header to handle dynamic structures
+    df = pd.read_excel("data/raw/Poverty_Rate.xlsx", engine="openpyxl")  # Read without a header to handle dynamic structures
 
     # Initialize an empty list to store cleaned data
     cleaned_data = []
@@ -76,10 +73,8 @@ def extract_poverty_rate():
     # Preview the cleaned data
     print(cleaned_df.head())
 
-def process_personal_income_per_capital():
-    # Load the CSV file
-    file_path = "data/raw/Personal_Income_Per_Capital.csv"  # Replace with the path to your CSV file
-    df = pd.read_csv(file_path)
+def process_personal_income_per_capita():
+    df = pd.read_csv("data/raw/Personal_Income_Per_Capita.csv")
     
     print(df.columns.tolist())
 
@@ -88,7 +83,7 @@ def process_personal_income_per_capital():
     filtered_df = df[columns_to_keep]
 
     # Save the filtered data to a new CSV file
-    filtered_df.to_csv("data/processed/Personal_Income_Per_Capital.csv", index=False)
+    filtered_df.to_csv("data/processed/Personal_Income_Per_Capita.csv", index=False)
 
     print(f"Filtered data saved to {filtered_df.head()}")
 
@@ -117,9 +112,9 @@ def process_median_income():
 
     print(f"Processed data saved to {df_long.head()}")
 
-def process_health_care_spending():
+def process_personal_health_care_per_capita():
     # Read the Excel file into a DataFrame
-    df = pd.read_excel("data/raw/Health_Care.xlsx", header=1) # header starts at row 2
+    df = pd.read_excel("data/raw/Personal_Health_Care_Per_Capita.xlsx", header=1) # header starts at row 2
 
     # Reshape DataFrame: Convert from wide to long format
     df_long = df.melt(id_vars=["Region/state of residence"], var_name="Year", value_name="Spending")
@@ -132,6 +127,10 @@ def process_health_care_spending():
     df_filtered = df_long[df_long["Year"].isin([str(year) for year in range(1999, 2018)])]
 
     # Save the cleaned data to CSV
-    df_filtered.to_csv("data/processed/Health_Care_Spending.csv", index=False)
+    df_filtered.to_csv("data/processed/Personal_Health_Care_Per_Capita.csv", index=False)
 
     print(f"Processed data saved to {df_filtered.head()}")
+
+
+if __name__ == "__main__":
+    process_personal_health_care_per_capita()
