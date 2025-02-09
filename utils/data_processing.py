@@ -36,42 +36,70 @@ def merge_death_count_population():
     except Exception as e:
         print(f"An error occurred: {e}")
         
+def sum_all_death_states():
+    # Load dataset
+    df = pd.read_csv('data/processed/US_Deaths_Populations.csv', sep=',')
+    df_filtered = df[df["State"] != "United States"]
+    
+    # Sum deaths across all "Cause Name" for each (State, Year), and keep Population
+    df_aggregated = (
+        df_filtered.groupby(["Year", "State"], as_index=False)
+        .agg({"Deaths": "sum", "Population": "first"})  # Summing Deaths, keeping Population
+    )
+
+    df_aggregated.to_csv("data/processed/States_Deaths_Populations.csv", index=False)
+    
+    print(df_aggregated.head())
+    
 def extract_poverty_rate():
     # Read the Excel file into a DataFrame
-    df = pd.read_excel("data/raw/Poverty_Rate.xlsx", engine="openpyxl")  # Read without a header to handle dynamic structures
+    df_poverty_full = pd.read_excel("data/raw/Poverty_Rate.xlsx", header=None)  # Read without a header to handle dynamic structures
 
-    # Initialize an empty list to store cleaned data
-    cleaned_data = []
+    # Extract all row indices where years are present (assuming years are in column 0)
+    year_rows = df_poverty_full[df_poverty_full[0].apply(lambda x: str(x).isdigit())].index
 
-    # Iterate through the rows to detect years and associate rows below them
-    current_year = None
-    for index, row in df.iterrows():
-        # Check if the row contains the year
-        first_cell = row[0]
-        if isinstance(first_cell, int) and 1999 <= first_cell <= 2017:
-            current_year = first_cell  # Extract the year (integer)
-        elif isinstance(first_cell, str) and first_cell.isdigit() and 1999 <= int(first_cell) <= 2017:
-            current_year = int(first_cell)  # Extract the year (string converted to integer)
-        elif current_year:
-            # Extract relevant data rows after detecting a year
-            state = row[0]  # state is in the first column
-            poverty_rate = row[4]  # poverty rate is in the fifth column
-            
-            # **Skip rows that look like column headers**
-            if isinstance(state, str) and "state" in state.lower():
-                continue  # Skip header-like rows
+    # Initialize an empty list to store extracted data
+    poverty_data = []
+
+    # Loop through each year row and extract corresponding state data
+    for i in range(len(year_rows)):
+        year = int(df_poverty_full.iloc[year_rows[i], 0])  # Extract year
+        start_idx = year_rows[i] + 1  # State data starts from the next row
         
-            if pd.notnull(state) and pd.notnull(poverty_rate):  # Ensure data is not empty
-                cleaned_data.append({"Year": current_year, "State": state, "Poverty Rate": poverty_rate})
+        # Determine the end index (either the next year row or the end of the dataset)
+        if i + 1 < len(year_rows):
+            end_idx = year_rows[i + 1] - 1
+        else:
+            end_idx = len(df_poverty_full)
 
-    # Convert cleaned data into a DataFrame
-    cleaned_df = pd.DataFrame(cleaned_data)
+        # Extract state-wise poverty data for the identified year
+        state_data = df_poverty_full.iloc[start_idx:end_idx, [0, 4]]  # Column 0 = State, Column 4 = Poverty Rate
+        state_data["Year"] = year  # Assign year
+        
+        # Rename columns properly
+        state_data.columns = ["State", "Poverty Rate", "Year"]
+        
+        # Append to list
+        poverty_data.append(state_data)
 
+    # Concatenate all extracted data
+    df_poverty_cleaned = pd.concat(poverty_data, ignore_index=True)
+
+    # Remove any rows with missing values
+    df_poverty_cleaned = df_poverty_cleaned.dropna()
+
+    # Convert Poverty Rate to numeric
+    df_poverty_cleaned["Poverty Rate"] = pd.to_numeric(df_poverty_cleaned["Poverty Rate"], errors="coerce")
+
+    # Keep only data from 1999 to 2017
+    df_poverty_cleaned = df_poverty_cleaned[(df_poverty_cleaned["Year"] >= 1999) & (df_poverty_cleaned["Year"] <= 2017)]
+    df_poverty_cleaned = df_poverty_cleaned.dropna(subset=["Poverty Rate"])
+    
     # Save the cleaned data to a CSV file
-    cleaned_df.to_csv("data/processed/US_Poverty_Rate.csv", index=False)
+    df_poverty_cleaned.to_csv("data/processed/US_Poverty_Rate.csv", index=False)
 
     # Preview the cleaned data
-    print(cleaned_df.head())
+    print(df_poverty_cleaned.head())
 
 def process_personal_income_per_capita():
     df = pd.read_csv("data/raw/Personal_Income_Per_Capita.csv")
@@ -131,6 +159,5 @@ def process_personal_health_care_per_capita():
 
     print(f"Processed data saved to {df_filtered.head()}")
 
-
 if __name__ == "__main__":
-    process_personal_health_care_per_capita()
+    extract_poverty_rate()
