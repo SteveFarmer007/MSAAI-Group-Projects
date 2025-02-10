@@ -4,6 +4,7 @@ matplotlib
 scipy
 seaborn
 scikit-learn
+statsmodels
 prophet
 ace_tools
 openpyxl

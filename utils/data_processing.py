@@ -7,21 +7,26 @@ def merge_death_count_population():
     """
     try:
         # Load the datasets
-        us_death_data = pd.read_csv('data/raw/US_Deaths.csv')
-        us_population_data = pd.read_csv('data/raw/US_Populations.csv')
+        us_death_data = pd.read_csv("data/raw/US_Deaths.csv")
+        us_population_data = pd.read_csv("data/raw/US_Populations.csv")
+        
+        # Exclude rows where Cause Name is "All Causes"
+        us_death_data["Cause Name"] = us_death_data["Cause Name"].str.strip().str.lower()
+        us_death_data = us_death_data[us_death_data["Cause Name"] != "all causes"]
 
         # Step 1: Handle missing or non-finite values
-        us_death_data['Year'] = us_death_data['Year'].fillna(0)  # Replace NaN with 0
-        us_death_data['Year'] = us_death_data['Year'].replace([float('inf'), float('-inf')], 0)  # Replace inf values with 0
-        us_population_data['Year'] = us_population_data['Year'].fillna(0)
+        us_death_data["Year"] = us_death_data["Year"].fillna(0)  # Replace NaN with 0
+        us_death_data["Year"] = us_death_data["Year"].replace([float("inf"), float("-inf")], 0)  # Replace inf values with 0
+        us_population_data["Year"] = us_population_data["Year"].fillna(0)
 
         # Step 2: Convert Year to integers
         # Ensure Year has the same data type
-        us_death_data['Year'] = us_death_data['Year'].astype(int)
-        us_population_data['Year'] = us_population_data['Year'].astype(int)
+        us_death_data["Year"] = us_death_data["Year"].astype(int)
+        us_population_data["Year"] = us_population_data["Year"].astype(int)
 
         # Merge the datasets
-        merged_data = pd.merge(us_death_data, us_population_data, on=['Year', 'State'], how='left')
+        merged_data = pd.merge(us_death_data, us_population_data, on=["Year", "State"], how="left")
+        
 
         # Check for missing values after the merge
         missing_values = merged_data.isnull().sum()
@@ -38,14 +43,22 @@ def merge_death_count_population():
         
 def sum_all_death_states():
     # Load dataset
-    df = pd.read_csv('data/processed/US_Deaths_Populations.csv', sep=',')
+    df_death_cause = pd.read_csv("data/raw/US_Deaths.csv")
+    df = pd.read_csv("data/processed/US_Deaths_Populations.csv", sep=",")
     df_filtered = df[df["State"] != "United States"]
     
+    # Extract Age-Adjusted Death Rate for "All Causes"
+    df_aadr = df_death_cause[df_death_cause["Cause Name"] == "All causes"][["Year", "State", "Age-adjusted Death Rate"]]
+
     # Sum deaths across all "Cause Name" for each (State, Year), and keep Population
     df_aggregated = (
         df_filtered.groupby(["Year", "State"], as_index=False)
         .agg({"Deaths": "sum", "Population": "first"})  # Summing Deaths, keeping Population
     )
+    
+    # Merge AADR into aggregated table
+    df_aggregated = df_aggregated.merge(df_aadr, on=["Year", "State"], how="left")
+
 
     df_aggregated.to_csv("data/processed/States_Deaths_Populations.csv", index=False)
     
@@ -106,7 +119,7 @@ def process_personal_income_per_capita():
     
     print(df.columns.tolist())
 
-    # Filter columns for years 1999 to 2017, and include the 'State' column
+    # Filter columns for years 1999 to 2017, and include the "State" column
     columns_to_keep = ['State'] + [str(year) for year in range(1999, 2018)]
     filtered_df = df[columns_to_keep]
 
@@ -160,4 +173,4 @@ def process_personal_health_care_per_capita():
     print(f"Processed data saved to {df_filtered.head()}")
 
 if __name__ == "__main__":
-    extract_poverty_rate()
+    sum_all_death_states()
