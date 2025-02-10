@@ -68,7 +68,7 @@ def extract_poverty_rate():
         
         # Determine the end index (either the next year row or the end of the dataset)
         if i + 1 < len(year_rows):
-            end_idx = year_rows[i + 1] - 1
+            end_idx = year_rows[i + 1]
         else:
             end_idx = len(df_poverty_full)
 
