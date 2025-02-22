@@ -14,13 +14,12 @@ def merge_death_count_population():
         us_death_data["Cause Name"] = us_death_data["Cause Name"].str.strip().str.lower()
         us_death_data = us_death_data[us_death_data["Cause Name"] != "all causes"]
 
-        # Step 1: Handle missing or non-finite values
-        us_death_data["Year"] = us_death_data["Year"].fillna(0)  # Replace NaN with 0
-        us_death_data["Year"] = us_death_data["Year"].replace([float("inf"), float("-inf")], 0)  # Replace inf values with 0
+        # Handle missing or non-finite values
+        us_death_data["Year"] = us_death_data["Year"].fillna(0)
+        us_death_data["Year"] = us_death_data["Year"].replace([float("inf"), float("-inf")], 0)
         us_population_data["Year"] = us_population_data["Year"].fillna(0)
 
-        # Step 2: Convert Year to integers
-        # Ensure Year has the same data type
+        # Convert Year to integers and Ensure Year has the same data type
         us_death_data["Year"] = us_death_data["Year"].astype(int)
         us_population_data["Year"] = us_population_data["Year"].astype(int)
 
@@ -42,7 +41,6 @@ def merge_death_count_population():
         print(f"An error occurred: {e}")
         
 def sum_all_death_states():
-    # Load dataset
     df_death_cause = pd.read_csv("data/raw/US_Deaths.csv")
     df = pd.read_csv("data/processed/US_Deaths_Populations.csv", sep=",")
     df_filtered = df[df["State"] != "United States"]
@@ -53,7 +51,7 @@ def sum_all_death_states():
     # Sum deaths across all "Cause Name" for each (State, Year), and keep Population
     df_aggregated = (
         df_filtered.groupby(["Year", "State"], as_index=False)
-        .agg({"Deaths": "sum", "Population": "first"})  # Summing Deaths, keeping Population
+        .agg({"Deaths": "sum", "Population": "first"})
     )
     
     # Merge AADR into aggregated table
@@ -66,9 +64,9 @@ def sum_all_death_states():
     
 def extract_poverty_rate():
     # Read the Excel file into a DataFrame
-    df_poverty_full = pd.read_excel("data/raw/Poverty_Rate.xlsx", header=None)  # Read without a header to handle dynamic structures
+    df_poverty_full = pd.read_excel("data/raw/Poverty_Rate.xlsx", header=None)
 
-    # Extract all row indices where years are present (assuming years are in column 0)
+    # Extract all row indices where years are present
     year_rows = df_poverty_full[df_poverty_full[0].apply(lambda x: str(x).isdigit())].index
 
     # Initialize an empty list to store extracted data
@@ -76,10 +74,9 @@ def extract_poverty_rate():
 
     # Loop through each year row and extract corresponding state data
     for i in range(len(year_rows)):
-        year = int(df_poverty_full.iloc[year_rows[i], 0])  # Extract year
-        start_idx = year_rows[i] + 1  # State data starts from the next row
+        year = int(df_poverty_full.iloc[year_rows[i], 0])
+        start_idx = year_rows[i] + 1
         
-        # Determine the end index (either the next year row or the end of the dataset)
         if i + 1 < len(year_rows):
             end_idx = year_rows[i + 1]
         else:
@@ -87,21 +84,15 @@ def extract_poverty_rate():
 
         # Extract state-wise poverty data for the identified year
         state_data = df_poverty_full.iloc[start_idx:end_idx, [0, 4]]  # Column 0 = State, Column 4 = Poverty Rate
-        state_data["Year"] = year  # Assign year
+        state_data["Year"] = year 
         
         # Rename columns properly
         state_data.columns = ["State", "Poverty Rate", "Year"]
-        
-        # Append to list
         poverty_data.append(state_data)
 
     # Concatenate all extracted data
     df_poverty_cleaned = pd.concat(poverty_data, ignore_index=True)
-
-    # Remove any rows with missing values
     df_poverty_cleaned = df_poverty_cleaned.dropna()
-
-    # Convert Poverty Rate to numeric
     df_poverty_cleaned["Poverty Rate"] = pd.to_numeric(df_poverty_cleaned["Poverty Rate"], errors="coerce")
 
     # Keep only data from 1999 to 2017
@@ -142,10 +133,7 @@ def process_median_income():
     columns_to_keep = ["State"] + [str(year) for year in range(1999, 2018)]
     df_filtered = df[columns_to_keep]
 
-    # Reshape from wide to long format
     df_long = df_filtered.melt(id_vars=["State"], var_name="Year", value_name="Median Income")
-
-    # Remove rows where "State" is NaN (if extra sheet duplicates exist)
     df_long = df_long.dropna(subset=["State"])
 
     # Save the processed data to a CSV file
@@ -172,5 +160,3 @@ def process_personal_health_care_per_capita():
 
     print(f"Processed data saved to {df_filtered.head()}")
 
-if __name__ == "__main__":
-    sum_all_death_states()
